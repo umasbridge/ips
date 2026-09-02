@@ -80,7 +80,9 @@ function buildRow(boardResult, direction, isView, lin, linData) {
   const handAccess = playHandAccess(direction, boardResult.declarer);
   return {
     lin,
-    play: isView ? (hasRecordedPlay ? linData.play : (knownLead ? [knownLead] : [])) : undefined,
+    play: isView
+      ? (hasRecordedPlay ? linData.play : (knownLead ? [knownLead] : []))
+      : (knownLead ? [knownLead] : []),
     play_available: hasRecordedPlay,
     problem_visible_hands: isView ? ['N', 'S', 'E', 'W'] : handAccess.visible,
     problem_user_hands: isView ? undefined : handAccess.controlled,
@@ -90,6 +92,8 @@ function buildRow(boardResult, direction, isView, lin, linData) {
     completion_user_side: boardResult.completion_user_side,
     completion_other_score: boardResult.completion_other_score,
     completion_scoring: boardResult.completion_scoring,
+    completion_traveller_scores: boardResult.completion_traveller_scores,
+    completed_result: boardResult.completed_result,
     dealer: boardResult.dealer,
     vul: normalizedVulnerability(boardResult.vulnerability, linData.vul),
     player_names: {

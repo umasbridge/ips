@@ -90,7 +90,10 @@ function ptToggleAlert() {
 }
 
 function ptToggleDd() {
-  if (_pt && (!Array.isArray(_pt.row.play) || _pt.row.play.length < 2)) {
+  // Before a hand has been played, a deal without recorded play uses DD as a
+  // static tricks table.  After the user completes it, DD becomes an analysis
+  // overlay so Replay can show the value of every legal card.
+  if (_pt && !_pt.reviewAvailable && (!Array.isArray(_pt.row.play) || _pt.row.play.length < 2)) {
     _pt.ddTableOpen = !_pt.ddTableOpen;
     if (_pt.ddTableOpen && !_pt.ddTable && !_pt.ddTableError) {
       try {
@@ -142,10 +145,11 @@ function ptStart() {
   const savedPlayerNames = _pt.row.player_names;
   let setup = P.setupFromRow(_pt.row);
 
-  // A view-only LIN may contain a complete deal and auction but no recorded
-  // cards. That is not playable interactively, but it is still fully
-  // viewable: initialise a fresh table so the hands and auction can render.
-  if (!setup && _pt.mode === 'view') {
+  // A LIN may contain a complete deal and contract without a recorded play
+  // sequence (or without the auction's closing passes). Initialise a fresh
+  // table from that data so it can still be played from the opening lead or
+  // displayed in view mode.
+  if (!setup && (_pt.mode === 'view' || _pt.mode === 'play')) {
     const parsed = P.parseLin(_pt.row.lin);
     const declarer = parsed?.declarer || _pt.row.declarer;
     if (declarer && parsed?.hands) {
@@ -178,7 +182,7 @@ function ptStart() {
         leader,
         solver: null,
         visible,
-        userSeats: new Set(),
+        userSeats: _pt.mode === 'play' ? P.computeUserSeats(declarer, visible) : new Set(),
         script: validScript,
         usedPlayPrefix: false,
       };
@@ -209,11 +213,20 @@ function ptStart() {
   });
   if (savedPlayerNames) _pt.row = { ..._pt.row, player_names: savedPlayerNames };
   _pt.contract = parseContractStr(_pt.row.contract);
-  if (_pt.mode === 'play' && _pt.userSeats.has(_pt.leader)) {
-    _pt.script = [];
-    _pt.usedPlayPrefix = false;
+  const completedResult = !_pt.reviewReplay ? _pt.row.completed_result : null;
+  const completedDeclarerTricks = Number(completedResult?.declarerTricks);
+  const restoredCompletion = Number.isFinite(completedDeclarerTricks);
+  if (restoredCompletion) {
+    const declarerSide = P.sideOf(_pt.declarer);
+    _pt.state.nsTricks = declarerSide === 'NS' ? completedDeclarerTricks : 13 - completedDeclarerTricks;
+    _pt.state.ewTricks = declarerSide === 'NS' ? 13 - completedDeclarerTricks : completedDeclarerTricks;
+    for (const seat of P.SEATS) {
+      for (const suit of P.SUITS) _pt.state.remaining[seat][suit] = [];
+    }
+    _pt.state.trick = [];
+    _pt.reviewAvailable = true;
   }
-  if (_pt.script.length >= 1) {
+  if (!restoredCompletion && _pt.script.length >= 1) {
     _pt.trickCheckpoints.push({ state: P.cloneState(_pt.state), scriptIdx: 0 });
     P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1; ptMaybeRevealDummy();
   }
@@ -373,6 +386,10 @@ function ptRetryClick() {
   const s = _pt.session;
   if (s.interacted && !s.recorded) s.retries.push({ tricks: _pt.state.tricks.length, at: Date.now() });
   s.interacted = true;
+  // Replay from a completed board is an analysis replay: keep all four hands
+  // visible and turn on the per-card double-dummy overlay automatically.
+  if (_pt.reviewAvailable) _ptDdOn = true;
+  _pt.reviewReplay = !!_pt.reviewAvailable;
   ptStart();
 }
 
@@ -527,7 +544,9 @@ function ptCommitAttempt(gaveUp) {
   const contractTarget = _pt.contract ? Number(_pt.contract.level) + 6 : null;
   const solved = gaveUp ? null : (contractTarget == null ? null
     : made >= (userIsDecl ? contractTarget : 14 - contractTarget));
-  if (_ptOnComplete) {
+  // A DD review replay is analysis of an already-recorded result.  It must not
+  // replace the result stored for the board.
+  if (_ptOnComplete && !_pt.reviewReplay) {
     const completion = ptCompletionSummary();
     _ptOnComplete({
       interactive: true, gaveUp: !!gaveUp, solved,
@@ -575,7 +594,7 @@ function ptDdCardScores() {
 function ptRenderHand(seat, ddScores = new Map()) {
   const P = _pt.P, st = _pt.state;
   const complete = P.isComplete(st);
-  const visible = complete || _pt.visible.includes(seat);
+  const visible = complete || (_pt.reviewAvailable && _ptDdOn) || _pt.visible.includes(seat);
   const isUser  = _pt.userSeats.has(seat);
   const yourTurn = !_pt.locked && !ptStepping() && !_pt.awaitingAdvance
     && _pt.viewTrick === null && isUser && st.turn === seat && !P.isComplete(st);
@@ -649,7 +668,9 @@ function ptTrickCenter() {
 }
 
 function ptCountsHtml() {
-  if (!_pt.row.play_available) return '';
+  // Tricks taken is an interactive Play-mode control. It is always shown in
+  // Play and never shown in View, regardless of recorded-play availability.
+  if (_pt.mode !== 'play') return '';
   const st = _pt.state, nsWon = _pt.P.sideOf(_pt.declarer) === 'NS';
   const declWon = nsWon ? st.nsTricks : st.ewTricks;
   const defWon  = nsWon ? st.ewTricks : st.nsTricks;
@@ -790,18 +811,50 @@ function ptCompletionSummary() {
   const diff = declarerTricks - target;
   const resultText = diff === 0 ? '=' : diff > 0 ? `+${diff}` : String(diff);
   const denom = _pt.contract.denom === 'N' ? 'NT' : (SUIT_SYM[_pt.contract.denom] || _pt.contract.denom);
-  const otherScore = Number(_pt.row.completion_other_score);
-  const showImps = String(_pt.row.completion_scoring || '').toUpperCase() === 'IMP' && Number.isFinite(otherScore);
-  const imps = showImps ? ptScoreToImps(score + otherScore) : null;
-  return { contract: `${_pt.contract.level}${denom}${_pt.contract.doubled || ''}`, level: _pt.contract.level, denomCode: _pt.contract.denom, doubled: _pt.contract.doubled || '', declarer: _pt.declarer, resultText, score, imps, declarerTricks };
+  const scoring = String(_pt.row.completion_scoring || '').toUpperCase();
+  const hasOtherScore = _pt.row.completion_other_score != null
+    && Number.isFinite(Number(_pt.row.completion_other_score));
+  const otherScore = hasOtherScore ? Number(_pt.row.completion_other_score) : null;
+  const travellerScores = Array.isArray(_pt.row.completion_traveller_scores)
+    ? _pt.row.completion_traveller_scores.map(Number).filter(Number.isFinite)
+    : [];
+  let imps = null;
+  let mpPercent = null;
+  if (scoring === 'IMP' && hasOtherScore) {
+    // Teams: both room scores are already expressed for the user's team.
+    imps = ptScoreToImps(score + otherScore);
+  } else if (scoring === 'IMP' && travellerScores.length) {
+    // IMP pairs: average the IMP difference against every traveller result.
+    const total = travellerScores.reduce((sum, reference) => sum + ptScoreToImps(score - reference), 0);
+    imps = Math.round((total / travellerScores.length) * 10) / 10;
+  } else if (scoring === 'MP' && travellerScores.length) {
+    const matchpoints = travellerScores.reduce((sum, reference) =>
+      sum + (score > reference ? 1 : score === reference ? 0.5 : 0), 0);
+    mpPercent = Math.round((1000 * matchpoints) / travellerScores.length) / 10;
+  }
+  return { contract: `${_pt.contract.level}${denom}${_pt.contract.doubled || ''}`, level: _pt.contract.level, denomCode: _pt.contract.denom, doubled: _pt.contract.doubled || '', declarer: _pt.declarer, resultText, score, imps, mpPercent, declarerTricks };
 }
 
 function ptCompletionResultHtml() {
   const summary = ptCompletionSummary();
   if (!summary) return escHtml(_pt.result?.detail || '');
   const denomHtml = summary.denomCode === 'N' ? 'NT' : `<span style="color:${suitHex(summary.denomCode)}">${SUIT_SYM[summary.denomCode] || escHtml(summary.denomCode)}</span>`;
+  const comparison = summary.imps != null
+    ? ` (IMPs = ${summary.imps > 0 ? '+' : ''}${summary.imps})`
+    : summary.mpPercent != null ? ` (MP% = ${summary.mpPercent})` : '';
   return `<div>Result: ${summary.level}${denomHtml}${escHtml(summary.doubled)} ${escHtml(summary.declarer)} ${summary.resultText}</div>
-    <div class="pt-complete-score">Score: ${summary.score > 0 ? '+' : ''}${summary.score}${summary.imps == null ? '' : ` (IMPs = ${summary.imps > 0 ? '+' : ''}${summary.imps})`}</div>`;
+    <div class="pt-complete-score">Score: ${summary.score > 0 ? '+' : ''}${summary.score}${comparison}</div>`;
+}
+
+function ptContractOnlyHtml() {
+  if (_pt.mode !== 'play' || !_pt.contract || !_pt.declarer) {
+    return '<div class="pt-auction-placeholder" aria-hidden="true"></div>';
+  }
+  const denom = _pt.contract.denom === 'N'
+    ? 'NT'
+    : `<span style="color:${suitHex(_pt.contract.denom)}">${SUIT_SYM[_pt.contract.denom] || escHtml(_pt.contract.denom)}</span>`;
+  return `<div class="pt-contract-only"><span class="pt-contract-only-label">Contract</span>
+    <span>${_pt.contract.level}${denom}${escHtml(_pt.contract.doubled || '')} by ${escHtml(_pt.declarer)}</span></div>`;
 }
 
 function ptResultPanelHtml() {
@@ -884,6 +937,7 @@ function ptRender() {
 
   if (_pt.P.isComplete(st)) {
     if (!_pt.result) _pt.result = ptComputeResult();
+    if (_pt.mode === 'play') _pt.reviewAvailable = true;
   }
 
   if (_pt.claiming) {
@@ -905,6 +959,7 @@ function ptRender() {
   const showTopbar = !!statusTxt;
   const ddScores = ptDdCardScores();
   const hasAuction = !_ptBiddingHtml.includes('pt-auction-placeholder');
+  const biddingContent = hasAuction ? _ptBiddingHtml : ptContractOnlyHtml();
   root.innerHTML = `
     ${showTopbar ? `<div class="pt-topbar">
       <span class="pt-status">${statusTxt}</span>
@@ -912,7 +967,7 @@ function ptRender() {
     ${_pt.warn ? `<div class="pt-warn">${escHtml(_pt.warn)}</div>` : ''}
     <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}">
       <div class="pt-pos-tl${hasAuction ? '' : ' pt-pos-tl-noauction'}">
-        ${_ptBiddingHtml}
+        ${biddingContent}
       </div>
       <div class="pt-pos-n"><div class="pt-seatlabel ${ptVulClass('N')}">${ptSeatLabel('N')}</div>${ptRenderHand('N', ddScores)}</div>
       <div class="pt-pos-tr">${_pt.mode === 'play'
@@ -926,7 +981,7 @@ function ptRender() {
       <div class="pt-pos-s"><div class="pt-seatlabel ${ptVulClass('S')}">${ptSeatLabel('S')}</div>${ptRenderHand('S', ddScores)}</div>
       <div class="pt-pos-bl">
         ${complete ? `<div class="pt-complete-result">${ptCompletionResultHtml()}</div>` : ''}
-        ${_ptHideDdButton ? '' : `<button class="pt-dd-toggle${_ptDdOn || _pt.ddTableOpen ? ' pt-dd-on' : ''}" id="ptDdToggle" title="${Array.isArray(_pt.row.play) && _pt.row.play.length >= 2 ? 'Show double-dummy future tricks for every legal card' : 'Show double-dummy tricks table'}">DD</button>`}
+        ${_ptHideDdButton && !_pt.reviewAvailable ? '' : `<button class="pt-dd-toggle${_ptDdOn || _pt.ddTableOpen ? ' pt-dd-on' : ''}" id="ptDdToggle" title="${_pt.reviewAvailable || (Array.isArray(_pt.row.play) && _pt.row.play.length >= 2) ? 'Show double-dummy future tricks for every legal card' : 'Show double-dummy tricks table'}">DD</button>`}
       </div>
       <div class="pt-pos-br">${ptCountsHtml()}${ptDdTableHtml()}</div>
     </div>`;
@@ -980,6 +1035,10 @@ function ensurePlayTableStyle() {
     .pt-pos-br{grid-column:3;grid-row:3;align-self:end;justify-self:end;position:relative;
       width:150px;display:flex;justify-content:flex-end;font-family:ui-sans-serif,system-ui;}
     .pt-auction-placeholder{width:108px;height:76px;}
+    .pt-contract-only{box-sizing:border-box;min-width:108px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
+      background:#fff;color:#111;font-family:ui-sans-serif,system-ui;font-size:0.82rem;font-weight:700;
+      display:flex;flex-direction:column;gap:2px;white-space:nowrap;}
+    .pt-contract-only-label{color:#6b7280;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
     .pt-deal-noauction .pt-pos-tl{transform:none;align-self:stretch;}
     .pt-deal-noauction .pt-pos-w{justify-self:start;}
     .pt-pos-tl-noauction{position:relative;box-sizing:border-box;}
