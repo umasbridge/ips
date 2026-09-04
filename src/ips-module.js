@@ -62,8 +62,9 @@ let _ptOnComplete = null;   // onComplete callback from current mount
 let _ptFormat     = null;   // 'MP' | 'IMP' | null
 let _ptNavEl      = null;   // optional external element for nav controls
 let _ptBiddingHtml   = '';
-let _ptDdOn          = false;
-let _ptHideDdButton  = false;
+let _ptDdOn              = false;
+let _ptHideDdButton      = false;
+let _ptHideAlertButton   = false;
 
 // ── DDS lazy loader ───────────────────────────────────────────────────────────
 
@@ -919,8 +920,8 @@ function ptClaimPanelHtml() {
 
 function ptPlayCornerHtml(canUndo) {
   return `<div class="pt-play-corner">
-    <button class="pt-alert${_ptAlertOn ? ' pt-alert-on' : ''}" id="ptAlertBtn"
-      title="${_ptAlertOn ? 'Alerts on — click to silence' : 'Alerts off — click to enable'}">Alert: ${_ptAlertOn ? 'on' : 'off'}</button>
+    ${_ptHideAlertButton ? '' : `<button class="pt-alert${_ptAlertOn ? ' pt-alert-on' : ''}" id="ptAlertBtn"
+      title="${_ptAlertOn ? 'Alerts on — click to silence' : 'Alerts off — click to enable'}">Alert: ${_ptAlertOn ? 'on' : 'off'}</button>`}
     <div class="pt-play-corner-row">
       <button class="pt-histbtn pt-undobtn" id="ptUndoBtn" ${canUndo ? '' : 'disabled'} title="Undo your last card">⎌ Undo</button>
       <button class="pt-retry" id="ptRetryBtn" title="Restart from the beginning">↻ Replay</button>
@@ -1159,15 +1160,16 @@ function ensurePlayTableStyle() {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 function mountIpsPlayer(container, options) {
-  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, navEl, mode, biddingHtml, hideDdButton } = options;
+  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, navEl, mode, biddingHtml, hideDdButton, ddOn, hideAlertButton } = options;
 
   _ptOnComplete  = onComplete || null;
   _ptFormat      = format || null;
   _ptDdsPath     = ddsPath;
   _ptNavEl       = navEl || null;
   _ptBiddingHtml = biddingHtml || '';
-  _ptDdOn        = false;
-  _ptHideDdButton = !!hideDdButton;
+  _ptDdOn            = !!ddOn;
+  _ptHideDdButton    = !!hideDdButton;
+  _ptHideAlertButton = !!hideAlertButton;
 
   // Apply carding to IPS engine
   const carding = { NS: cardingNS || 'UDCA', EW: cardingEW || 'UDCA' };

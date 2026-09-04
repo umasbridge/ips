@@ -69,7 +69,7 @@ function playHandAccess(direction, declarer) {
   return { visible: [selectedSeat], controlled: null };
 }
 
-function buildRow(boardResult, direction, isView, lin, linData) {
+function buildRow(boardResult, direction, isView, ddPlay, lin, linData) {
   const contract = boardResult.contract_level && boardResult.contract_denom
     ? `${boardResult.contract_level}${boardResult.contract_denom}${boardResult.contract_x || ''}`
     : undefined;
@@ -84,8 +84,8 @@ function buildRow(boardResult, direction, isView, lin, linData) {
       ? (hasRecordedPlay ? linData.play : (knownLead ? [knownLead] : []))
       : (knownLead ? [knownLead] : []),
     play_available: hasRecordedPlay,
-    problem_visible_hands: isView ? ['N', 'S', 'E', 'W'] : handAccess.visible,
-    problem_user_hands: isView ? undefined : handAccess.controlled,
+    problem_visible_hands: (isView || ddPlay) ? ['N', 'S', 'E', 'W'] : handAccess.visible,
+    problem_user_hands: (isView || ddPlay) ? undefined : handAccess.controlled,
     contract,
     declarer: boardResult.declarer,
     lead: knownLead,
@@ -227,7 +227,7 @@ function buildAuctionHtml(boardResult, linData) {
 //   mode         — 'play' (default) | 'view'
 //   direction    — seat string e.g. 'S', required when mode='play'
 //   cardingNS, cardingEW, format, onComplete, autoStart
-export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingNS = 'UDCA', cardingEW = 'UDCA', format, onComplete, autoStart, topRightOffset = 0, hideDdButton = false, onPlayerReady }) {
+export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingNS = 'UDCA', cardingEW = 'UDCA', format, onComplete, autoStart, topRightOffset = 0, hideDdButton = false, ddPlay = false, onPlayerReady }) {
   const containerRef = useRef(null);
   const playerRef    = useRef(null);
   const runtimeRef   = useRef(null);
@@ -244,10 +244,10 @@ export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingN
       .replace(/mb\|P\|/g, 'mb|p|') || '';
     const linData = parseLinMetadata(lin);
     return {
-      row: buildRow(boardResult, direction, isView, lin || undefined, linData),
+      row: buildRow(boardResult, direction, isView, ddPlay, lin || undefined, linData),
       auctionHtml: buildAuctionHtml(boardResult, linData),
     };
-  }, [boardResult, direction, isView]);
+  }, [boardResult, direction, isView, ddPlay]);
   const { row, auctionHtml } = prepared;
 
   useEffect(() => {
@@ -278,7 +278,9 @@ export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingN
           cardingEW: cardingEW || 'UDCA',
           onComplete,
           biddingHtml: auctionHtml,
-          hideDdButton,
+          hideDdButton: hideDdButton || ddPlay,
+          ddOn: ddPlay || undefined,
+          hideAlertButton: ddPlay || undefined,
         });
         onPlayerReady?.(playerRef.current);
       })
