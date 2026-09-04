@@ -58,7 +58,8 @@ let _ptDds    = null;   // loaded DDS solver instance
 let _ptDdsLoading = null;
 let _ptDdsPath    = null;   // set on each mount
 let _ptAlertOn    = localStorage.getItem('bpAlertOn') === '1';
-let _ptOnComplete = null;   // onComplete callback from current mount
+let _ptOnComplete     = null;   // onComplete callback from current mount
+let _ptDeferComplete  = false;  // when true, delay onComplete until user advances past completion
 let _ptFormat     = null;   // 'MP' | 'IMP' | null
 let _ptNavEl      = null;   // optional external element for nav controls
 let _ptBiddingHtml   = '';
@@ -373,6 +374,13 @@ function ptAdvanceTrick() {
 
 function ptProceed() {
   if (!_pt) return;
+  if (_pt.pendingComplete) {
+    const { fn, data } = _pt.pendingComplete;
+    _pt.pendingComplete = null;
+    _pt.session = ptFreshSession();
+    fn(data);
+    return;
+  }
   if (_pt.awaitingAdvance) return ptAdvance();
   const st = _pt.state;
   const atBoundary = st.trick.length === 0 && st.tricks.length > 0;
@@ -391,6 +399,7 @@ function ptRetryClick() {
   // visible and turn on the per-card double-dummy overlay automatically.
   if (_pt.reviewAvailable) _ptDdOn = true;
   _pt.reviewReplay = !!_pt.reviewAvailable;
+  _pt.pendingComplete = null;
   ptStart();
 }
 
@@ -549,7 +558,7 @@ function ptCommitAttempt(gaveUp) {
   // replace the result stored for the board.
   if (_ptOnComplete && !_pt.reviewReplay) {
     const completion = ptCompletionSummary();
-    _ptOnComplete({
+    const payload = {
       interactive: true, gaveUp: !!gaveUp, solved,
       retries: s.retries.slice(),
       tricksMade: gaveUp ? null : made,
@@ -557,7 +566,14 @@ function ptCommitAttempt(gaveUp) {
       grade: null, remarks: '',
       timestamp: new Date().toISOString(),
       ...(completion || {}),
-    });
+    };
+    if (_ptDeferComplete) {
+      // Hold the callback until the user clicks ▶ past the completion state.
+      _pt.pendingComplete = { fn: _ptOnComplete, data: payload };
+      ptRender();
+      return;
+    }
+    _ptOnComplete(payload);
   }
   _pt.session = ptFreshSession();
 }
@@ -687,10 +703,10 @@ function ptAdvanceBtn() {
   const atBoundary = st.trick.length === 0 && st.tricks.length > 0;
   const showStep = !_pt.viewTrick && ptStepping() && !_pt.locked;
   const hasPrev = _pt.trickCheckpoints.length > 1;
-  if ((showStep && atBoundary) || _pt.awaitingAdvance) {
+  if ((showStep && atBoundary) || _pt.awaitingAdvance || _pt.pendingComplete) {
     return `<span class="pt-view-nav">
       ${hasPrev ? `<button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button>` : ''}
-      <button class="pt-stepbtn" id="ptStepBtn" title="Continue">▶</button>
+      <button class="pt-stepbtn" id="ptStepBtn" title="${_pt.pendingComplete ? 'Switch to view mode' : 'Continue'}">▶</button>
     </span>`;
   }
   if (showStep && hasPrev) {
@@ -1160,9 +1176,10 @@ function ensurePlayTableStyle() {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 function mountIpsPlayer(container, options) {
-  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, navEl, mode, biddingHtml, hideDdButton, ddOn, hideAlertButton } = options;
+  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, deferComplete, navEl, mode, biddingHtml, hideDdButton, ddOn, hideAlertButton } = options;
 
-  _ptOnComplete  = onComplete || null;
+  _ptOnComplete    = onComplete || null;
+  _ptDeferComplete = !!deferComplete;
   _ptFormat      = format || null;
   _ptDdsPath     = ddsPath;
   _ptNavEl       = navEl || null;

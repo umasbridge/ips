@@ -277,6 +277,7 @@ export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingN
           cardingNS: cardingNS || 'UDCA',
           cardingEW: cardingEW || 'UDCA',
           onComplete,
+          deferComplete: !!onComplete && !ddPlay,
           biddingHtml: auctionHtml,
           hideDdButton: hideDdButton || ddPlay,
           ddOn: ddPlay || undefined,
