@@ -882,10 +882,7 @@ function ptResultPanelHtml() {
   return `<div class="pt-result ${cls}">
     <div class="pt-result-head">${head}</div>
     <div class="pt-result-sub">${escHtml(r.detail || '')}${r.claimed ? ' (claimed)' : ''}</div>
-    <div style="display:inline-flex;gap:6px;margin-top:6px">
-      ${n > 0 ? `<button class="pt-stepbtn pt-view-nav" id="ptBrowseBtn" title="Browse tricks">◀</button>` : ''}
-      <button class="pt-replay" id="ptReplayBtn" title="Play the deal again from the start">↻ Replay</button>
-    </div>
+    ${n > 0 ? `<div style="display:inline-flex;gap:6px;margin-top:6px"><button class="pt-stepbtn pt-view-nav" id="ptBrowseBtn" title="Browse tricks">◀</button></div>` : ''}
   </div>`;
 }
 
@@ -940,7 +937,6 @@ function ptPlayCornerHtml(canUndo) {
       title="${_ptAlertOn ? 'Alerts on — click to silence' : 'Alerts off — click to enable'}">Alert: ${_ptAlertOn ? 'on' : 'off'}</button>`}
     <div class="pt-play-corner-row">
       <button class="pt-histbtn pt-undobtn" id="ptUndoBtn" ${canUndo ? '' : 'disabled'} title="Undo your last card">⎌ Undo</button>
-      <button class="pt-retry" id="ptRetryBtn" title="Restart from the beginning">↻ Replay</button>
     </div>
   </div>`;
 }
@@ -988,9 +984,7 @@ function ptRender() {
       </div>
       <div class="pt-pos-n"><div class="pt-seatlabel ${ptVulClass('N')}">${ptSeatLabel('N')}</div>${ptRenderHand('N', ddScores)}</div>
       <div class="pt-pos-tr">${_pt.mode === 'play'
-        ? (complete
-          ? '<button class="pt-retry" id="ptRetryBtn" title="Restart from the beginning">↻ Replay</button>'
-          : ptPlayCornerHtml(canUndo))
+        ? (complete ? '' : ptPlayCornerHtml(canUndo))
         : ptAdvanceBtn()}</div>
       <div class="pt-pos-w"><div class="pt-seatlabel ${ptVulClass('W')}">${ptSeatLabel('W')}</div>${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter()}</div>
@@ -1010,13 +1004,11 @@ function ptRender() {
   root.querySelector('#ptPrevTrickInline')?.addEventListener('click', ptUndoTrick);
   root.querySelector('#ptDdToggle')?.addEventListener('click', ptToggleDd);
   root.querySelector('#ptDdTableClose')?.addEventListener('click', ptCloseDdTable);
-  root.querySelector('#ptRetryBtn')?.addEventListener('click', ptRetryClick);
   root.querySelector('#ptAlertBtn')?.addEventListener('click', ptToggleAlert);
   root.querySelector('#ptUndoBtn')?.addEventListener('click', ptUndo);
 
   // Nav controls may be in external navEl or inline in root
   const navRoot = _ptNavEl || root;
-  navRoot.querySelector('#ptRetryBtn')?.addEventListener('click', ptRetryClick);
   navRoot.querySelector('#ptClaimBtn')?.addEventListener('click', ptClaimOpen);
   navRoot.querySelector('#ptAlertBtn')?.addEventListener('click', ptToggleAlert);
   navRoot.querySelector('#ptPrevTrick')?.addEventListener('click', ptPrevTrick);
@@ -1136,9 +1128,6 @@ function ensurePlayTableStyle() {
     .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;}
     .pt-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:440px;min-height:30px;}
     .pt-status{font-size:0.86rem;color:#1d4ed8;font-family:ui-sans-serif,system-ui;}
-    .pt-retry{background:#fff;border:1px solid #2563eb;color:#2563eb;border-radius:6px;padding:4px 14px;
-      flex-shrink:0;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:ui-sans-serif,system-ui;}
-    .pt-retry:hover{background:#eff6ff;}
     .pt-claim{background:#fff;border:1px solid #059669;color:#059669;border-radius:6px;padding:4px 14px;
       flex-shrink:0;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:ui-sans-serif,system-ui;}
     .pt-claim:hover{background:#ecfdf5;}
@@ -1150,7 +1139,7 @@ function ensurePlayTableStyle() {
     .pt-play-corner{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:0;}
     .pt-play-corner>.pt-alert{min-width:104px;padding:4px 10px;}
     .pt-play-corner-row{display:flex;align-items:center;justify-content:center;gap:5px;}
-    .pt-play-corner-row .pt-histbtn,.pt-play-corner-row .pt-retry{padding:3px 7px;font-size:0.72rem;line-height:1.4;}
+    .pt-play-corner-row .pt-histbtn{padding:3px 7px;font-size:0.72rem;line-height:1.4;}
     .pt-view-nav{display:inline-flex;gap:4px;margin-top:4px;}
     .pt-trick-center-action{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;}
     .pt-trick-center-action .pt-view-nav{margin-top:0;}
