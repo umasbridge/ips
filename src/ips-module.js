@@ -651,10 +651,11 @@ function ptVulClass(seat) {
   return isVul ? 'pt-seatlabel-vul' : 'pt-seatlabel-nvul';
 }
 
-function ptSeatLabel(seat) {
+function ptSeatLabelHtml(seat) {
   const playerName = _pt.row.player_names?.[seat] || _pt.player_names?.[seat];
   const displayName = playerName || SEAT_FULL[seat];
-  return escHtml(displayName);
+  const titleAttr = playerName ? ` title="${escHtml(playerName)}"` : '';
+  return `<div class="pt-seatlabel ${ptVulClass(seat)}"${titleAttr}>${escHtml(displayName)}</div>`;
 }
 
 function ptTrickCenter() {
@@ -982,14 +983,14 @@ function ptRender() {
       <div class="pt-pos-tl${hasAuction ? '' : ' pt-pos-tl-noauction'}">
         ${biddingContent}
       </div>
-      <div class="pt-pos-n"><div class="pt-seatlabel ${ptVulClass('N')}">${ptSeatLabel('N')}</div>${ptRenderHand('N', ddScores)}</div>
+      <div class="pt-pos-n">${ptSeatLabelHtml('N')}${ptRenderHand('N', ddScores)}</div>
       <div class="pt-pos-tr">${_pt.mode === 'play'
         ? (complete ? '' : ptPlayCornerHtml(canUndo))
         : ptAdvanceBtn()}</div>
-      <div class="pt-pos-w"><div class="pt-seatlabel ${ptVulClass('W')}">${ptSeatLabel('W')}</div>${ptRenderHand('W', ddScores)}</div>
+      <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter()}</div>
-      <div class="pt-pos-e"><div class="pt-seatlabel ${ptVulClass('E')}">${ptSeatLabel('E')}</div>${ptRenderHand('E', ddScores)}</div>
-      <div class="pt-pos-s"><div class="pt-seatlabel ${ptVulClass('S')}">${ptSeatLabel('S')}</div>${ptRenderHand('S', ddScores)}</div>
+      <div class="pt-pos-e">${ptSeatLabelHtml('E')}${ptRenderHand('E', ddScores)}</div>
+      <div class="pt-pos-s">${ptSeatLabelHtml('S')}${ptRenderHand('S', ddScores)}</div>
       <div class="pt-pos-bl">
         ${complete ? `<div class="pt-complete-result">${ptCompletionResultHtml()}</div>` : ''}
         ${_ptHideDdButton && !_pt.reviewAvailable ? '' : `<button class="pt-dd-toggle${_ptDdOn || _pt.ddTableOpen ? ' pt-dd-on' : ''}" id="ptDdToggle" title="${_pt.reviewAvailable || (Array.isArray(_pt.row.play) && _pt.row.play.length >= 2) ? 'Show double-dummy future tricks for every legal card' : 'Show double-dummy tricks table'}">DD</button>`}
@@ -1052,7 +1053,7 @@ function ensurePlayTableStyle() {
     .pt-deal-noauction .pt-pos-w{justify-self:start;}
     .pt-pos-tl-noauction{position:relative;box-sizing:border-box;}
     .pt-pos-tl-noauction .pt-auction-placeholder{position:absolute;inset:0;}
-    .pt-seatlabel{font-family:ui-sans-serif,system-ui;font-size:0.8rem;font-weight:600;text-align:center;margin-bottom:3px;padding:3px 8px;border-radius:4px;color:#fff;}
+    .pt-seatlabel{font-family:ui-sans-serif,system-ui;font-size:0.8rem;font-weight:600;text-align:center;margin-bottom:3px;padding:3px 8px;border-radius:4px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;box-sizing:border-box;}
     .pt-seatlabel-vul{background:#e00000!important;}
     .pt-seatlabel-nvul{background:#15803d!important;}
     .pt-role{color:rgba(255,255,255,0.75);font-weight:400;}
@@ -1125,7 +1126,7 @@ function ensurePlayTableStyle() {
     .pt-replay{margin-top:4px;background:#fff;border:1px solid #2563eb;color:#2563eb;border-radius:6px;
       padding:6px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:ui-sans-serif,system-ui;}
     .pt-replay:hover{background:#eff6ff;}
-    .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;}
+    .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;container-type:inline-size;}
     .pt-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:440px;min-height:30px;}
     .pt-status{font-size:0.86rem;color:#1d4ed8;font-family:ui-sans-serif,system-ui;}
     .pt-claim{background:#fff;border:1px solid #059669;color:#059669;border-radius:6px;padding:4px 14px;
@@ -1159,7 +1160,7 @@ function ensurePlayTableStyle() {
     .pt-claim-cancel:hover{background:#f3f4f6;}
     .pt-claim-err{color:#dc2626;font-size:0.8rem;}
     #ptClaimInput{width:60px;padding:3px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:0.88rem;}
-    @media (max-width:499px){
+    @container (max-width:499px){
       .pt-mount{align-items:stretch;}
       .pt-deal{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:6px;}
       .pt-pos-n{transform:none;}
