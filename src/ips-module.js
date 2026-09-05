@@ -1159,6 +1159,21 @@ function ensurePlayTableStyle() {
     .pt-claim-cancel:hover{background:#f3f4f6;}
     .pt-claim-err{color:#dc2626;font-size:0.8rem;}
     #ptClaimInput{width:60px;padding:3px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:0.88rem;}
+    @media (max-width:499px){
+      .pt-mount{align-items:stretch;}
+      .pt-deal{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:6px;}
+      .pt-pos-n{transform:none;}
+      .pt-pos-s{transform:none;}
+      .pt-pos-tr{min-width:0;}
+      .pt-pos-br{width:auto;}
+      .pt-pos-bl{width:auto;flex-direction:column;align-items:flex-start;}
+      .pt-trick{width:100%;height:auto;aspect-ratio:1;}
+      .pt-hand{min-width:0;width:100%;box-sizing:border-box;}
+      .pt-row{font-size:0.85rem;white-space:normal;}
+      .pt-seatlabel{font-size:0.7rem;padding:2px 4px;margin-bottom:1px;}
+      .pt-play-corner>.pt-alert{min-width:0;}
+      .pt-complete-result{position:static;margin-top:4px;box-sizing:border-box;white-space:normal;}
+    }
   `;
 }
 
