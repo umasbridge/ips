@@ -66,6 +66,7 @@ let _ptBiddingHtml   = '';
 let _ptDdOn              = false;
 let _ptHideDdButton      = false;
 let _ptHideAlertButton   = false;
+let _ptBottomLeftEl      = null;   // optional external element injected into .pt-pos-bl
 
 // ── DDS lazy loader ───────────────────────────────────────────────────────────
 
@@ -92,10 +93,11 @@ function ptToggleAlert() {
 }
 
 function ptToggleDd() {
-  // Before a hand has been played, a deal without recorded play uses DD as a
-  // static tricks table.  After the user completes it, DD becomes an analysis
-  // overlay so Replay can show the value of every legal card.
-  if (_pt && !_pt.reviewAvailable && (!Array.isArray(_pt.row.play) || _pt.row.play.length < 2)) {
+  // Show the static DD tricks table when: the deal is fully complete (no cards left
+  // to annotate), OR before a hand has been played and there's no recorded play.
+  // After advancing into replay mode, DD becomes a card-analysis overlay instead.
+  const atEnd = _pt && _pt.P.isComplete(_pt.state) && !_pt.reviewReplay;
+  if (atEnd || (_pt && !_pt.reviewAvailable && (!Array.isArray(_pt.row.play) || _pt.row.play.length < 2))) {
     _pt.ddTableOpen = !_pt.ddTableOpen;
     if (_pt.ddTableOpen && !_pt.ddTable && !_pt.ddTableError) {
       try {
@@ -998,6 +1000,11 @@ function ptRender() {
       <div class="pt-pos-br">${ptCountsHtml()}${ptDdTableHtml()}</div>
     </div>`;
 
+  if (_ptBottomLeftEl) {
+    const bl = root.querySelector('.pt-pos-bl');
+    if (bl) bl.appendChild(_ptBottomLeftEl);
+  }
+
   root.querySelectorAll('.pt-card').forEach(el => {
     el.addEventListener('click', () => ptOnCardClick(el.dataset.seat, el.dataset.suit, el.dataset.rank));
   });
@@ -1028,15 +1035,15 @@ function ensurePlayTableStyle() {
   }
   s.textContent = `
     .pt-mount{position:relative;}
-    .pt-deal{display:inline-grid;grid-template-columns:150px 150px 150px;grid-template-rows:auto auto auto;
+    .pt-deal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:478px;width:100%;grid-template-rows:auto auto auto;
       column-gap:14px;row-gap:5px;align-items:center;justify-items:center;
       font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
     .pt-pos-tl{grid-column:1;grid-row:1;align-self:start;justify-self:start;
       display:flex;flex-direction:column;align-items:flex-start;}
     .pt-pos-n{grid-column:2;grid-row:1;align-self:start;transform:translateX(20px);} .pt-pos-w{grid-column:1;grid-row:2;justify-self:start;}
     .pt-pos-c{grid-column:2;grid-row:2;} .pt-pos-e{grid-column:3;grid-row:2;justify-self:end;} .pt-pos-s{grid-column:2;grid-row:3;transform:translateX(20px);}
-    .pt-pos-bl{grid-column:1;grid-row:3;align-self:end;justify-self:start;width:108px;position:relative;
-      display:flex;justify-content:flex-start;}
+    .pt-pos-bl{grid-column:1;grid-row:3;align-self:end;justify-self:start;width:auto;position:relative;
+      display:flex;gap:6px;justify-content:flex-start;}
     .pt-complete-result{position:absolute;left:0;bottom:40px;box-sizing:border-box;width:max-content;min-width:108px;
       padding:4px 8px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;color:#1f2937;
       font-family:ui-sans-serif,system-ui;font-size:0.82rem;font-weight:700;white-space:nowrap;}
@@ -1126,7 +1133,7 @@ function ensurePlayTableStyle() {
     .pt-replay{margin-top:4px;background:#fff;border:1px solid #2563eb;color:#2563eb;border-radius:6px;
       padding:6px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:ui-sans-serif,system-ui;}
     .pt-replay:hover{background:#eff6ff;}
-    .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;container-type:inline-size;}
+    .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;}
     .pt-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:440px;min-height:30px;}
     .pt-status{font-size:0.86rem;color:#1d4ed8;font-family:ui-sans-serif,system-ui;}
     .pt-claim{background:#fff;border:1px solid #059669;color:#059669;border-radius:6px;padding:4px 14px;
@@ -1160,9 +1167,10 @@ function ensurePlayTableStyle() {
     .pt-claim-cancel:hover{background:#f3f4f6;}
     .pt-claim-err{color:#dc2626;font-size:0.8rem;}
     #ptClaimInput{width:60px;padding:3px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:0.88rem;}
-    @container (max-width:499px){
+    @media (max-width:499px){
       .pt-mount{align-items:stretch;}
-      .pt-deal{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:6px;}
+      .pt-deal{column-gap:6px;}
+      .pt-pos-c{justify-self:stretch;}
       .pt-pos-n{transform:none;}
       .pt-pos-s{transform:none;}
       .pt-pos-tr{min-width:0;}
@@ -1181,13 +1189,14 @@ function ensurePlayTableStyle() {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 function mountIpsPlayer(container, options) {
-  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, deferComplete, navEl, mode, biddingHtml, hideDdButton, ddOn, hideAlertButton } = options;
+  const { row, ddsPath, format, cardingNS, cardingEW, onComplete, deferComplete, navEl, mode, biddingHtml, hideDdButton, ddOn, hideAlertButton, bottomLeftEl } = options;
 
   _ptOnComplete    = onComplete || null;
   _ptDeferComplete = !!deferComplete;
   _ptFormat      = format || null;
   _ptDdsPath     = ddsPath;
   _ptNavEl       = navEl || null;
+  _ptBottomLeftEl = bottomLeftEl || null;
   _ptBiddingHtml = biddingHtml || '';
   _ptDdOn            = !!ddOn;
   _ptHideDdButton    = !!hideDdButton;
