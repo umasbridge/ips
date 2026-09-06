@@ -227,7 +227,7 @@ function buildAuctionHtml(boardResult, linData) {
 //   mode         — 'play' (default) | 'view'
 //   direction    — seat string e.g. 'S', required when mode='play'
 //   cardingNS, cardingEW, format, onComplete, autoStart
-export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingNS = 'UDCA', cardingEW = 'UDCA', format, onComplete, autoStart, topRightOffset = 0, hideDdButton = false, ddPlay = false, onPlayerReady }) {
+export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingNS = 'UDCA', cardingEW = 'UDCA', format, onComplete, autoStart, topRightOffset = 0, hideDdButton = false, ddPlay = false, onPlayerReady, bottomLeftEl }) {
   const containerRef = useRef(null);
   const playerRef    = useRef(null);
   const runtimeRef   = useRef(null);
@@ -282,6 +282,7 @@ export default function IpsPlayer({ boardResult, mode, direction = 'S', cardingN
           hideDdButton: hideDdButton || ddPlay,
           ddOn: ddPlay || undefined,
           hideAlertButton: ddPlay || undefined,
+          bottomLeftEl,
         });
         onPlayerReady?.(playerRef.current);
       })
