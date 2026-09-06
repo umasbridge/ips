@@ -981,7 +981,7 @@ function ptRender() {
       <span class="pt-status">${statusTxt}</span>
     </div>` : ''}
     ${_pt.warn ? `<div class="pt-warn">${escHtml(_pt.warn)}</div>` : ''}
-    <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}">
+    <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:478px;box-sizing:border-box;">
       <div class="pt-pos-tl${hasAuction ? '' : ' pt-pos-tl-noauction'}">
         ${biddingContent}
       </div>
