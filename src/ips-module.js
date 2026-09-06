@@ -981,7 +981,7 @@ function ptRender() {
       <span class="pt-status">${statusTxt}</span>
     </div>` : ''}
     ${_pt.warn ? `<div class="pt-warn">${escHtml(_pt.warn)}</div>` : ''}
-    <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:478px;box-sizing:border-box;">
+    <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:478px;box-sizing:border-box;align-self:stretch;">
       <div class="pt-pos-tl${hasAuction ? '' : ' pt-pos-tl-noauction'}">
         ${biddingContent}
       </div>
@@ -1133,7 +1133,7 @@ function ensurePlayTableStyle() {
     .pt-replay{margin-top:4px;background:#fff;border:1px solid #2563eb;color:#2563eb;border-radius:6px;
       padding:6px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:ui-sans-serif,system-ui;}
     .pt-replay:hover{background:#eff6ff;}
-    .pt-mount{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 12px;}
+    .pt-mount{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:6px 0 12px;}
     .pt-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:440px;min-height:30px;}
     .pt-status{font-size:0.86rem;color:#1d4ed8;font-family:ui-sans-serif,system-ui;}
     .pt-claim{background:#fff;border:1px solid #059669;color:#059669;border-radius:6px;padding:4px 14px;
