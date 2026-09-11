@@ -230,9 +230,12 @@ function ptStart() {
     _pt.state.trick = [];
     _pt.reviewAvailable = true;
   }
-  if (!restoredCompletion && _pt.script.length >= 1) {
+  if (!restoredCompletion) {
     _pt.trickCheckpoints.push({ state: P.cloneState(_pt.state), scriptIdx: 0 });
-    P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1; ptMaybeRevealDummy();
+    if (_pt.script.length >= 1) {
+      P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1;
+      ptMaybeRevealDummy();
+    }
   }
   ptRender();
   if (_pt.mode !== 'view' && _pt.scriptIdx >= _pt.script.length && !P.isComplete(_pt.state) && !_pt.userSeats.has(_pt.state.turn)) {
@@ -266,6 +269,7 @@ function ptUndoTrick() {
   _pt.awaitingAdvance = false;
   _pt.locked = false;
   _pt.result = null;
+  _pt.history = [];
   ptRender();
 }
 
@@ -310,6 +314,9 @@ function ptOnCardClick(seat, suit, rank) {
   ptCaptureTarget();
   _pt.session.interacted = true;
   _pt.userActed = true;
+  if (_pt.state.trick.length === 0 && _pt.state.tricks.length > 0 && !ptStepping()) {
+    _pt.trickCheckpoints.push({ state: P.cloneState(_pt.state), scriptIdx: _pt.scriptIdx });
+  }
   _pt.history.push(_pt.P.cloneState(_pt.state));
   P.applyCard(_pt.state, { suit, rank });
   ptMaybeRevealDummy();
@@ -632,7 +639,7 @@ function ptRenderHand(seat, ddScores = new Map()) {
       const bad = _pt.illegalKey === seat + su + r;
       const ddScore = seat === st.turn ? ddScores.get(su + r) : null;
       const ddText = ddScore == null ? '' : ddScores.contractRelative
-        ? (ddScore === 0 ? '=' : String(Math.abs(ddScore)))
+        ? (ddScore === 0 ? '=' : ddScore > 0 ? `+${ddScore}` : `${ddScore}`)
         : String(ddScore);
       const ddTitle = ddScore == null || !ddScores.contractRelative ? ''
         : (ddScore === 0 ? 'Contract makes exactly' : ddScore > 0 ? `${ddScore} overtrick${ddScore === 1 ? '' : 's'}` : `${Math.abs(ddScore)} undertrick${ddScore === -1 ? '' : 's'}`);
@@ -713,6 +720,10 @@ function ptAdvanceBtn() {
     </span>`;
   }
   if (showStep && hasPrev) {
+    return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
+  }
+  const canUndoAnyTrick = !ptStepping() && _pt.trickCheckpoints.length > 0 && !_pt.locked;
+  if (atBoundary && canUndoAnyTrick) {
     return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
   }
   return '';
@@ -1039,7 +1050,7 @@ function ensurePlayTableStyle() {
       column-gap:14px;row-gap:5px;align-items:center;justify-items:center;
       font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
     .pt-pos-tl{grid-column:1;grid-row:1;align-self:start;justify-self:start;
-      display:flex;flex-direction:column;align-items:flex-start;}
+      display:flex;flex-direction:column;align-items:flex-start;max-width:100%;overflow:hidden;}
     .pt-pos-n{grid-column:2;grid-row:1;align-self:start;transform:translateX(20px);} .pt-pos-w{grid-column:1;grid-row:2;justify-self:start;}
     .pt-pos-c{grid-column:2;grid-row:2;} .pt-pos-e{grid-column:3;grid-row:2;justify-self:end;} .pt-pos-s{grid-column:2;grid-row:3;transform:translateX(20px);}
     .pt-pos-bl{grid-column:1;grid-row:3;align-self:end;justify-self:start;width:auto;position:relative;

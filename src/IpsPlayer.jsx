@@ -82,10 +82,10 @@ function buildRow(boardResult, direction, isView, ddPlay, lin, linData) {
     lin,
     play: isView
       ? (hasRecordedPlay ? linData.play : (knownLead ? [knownLead] : []))
-      : (knownLead ? [knownLead] : []),
+      : (ddPlay ? [] : (knownLead ? [knownLead] : [])),
     play_available: hasRecordedPlay,
     problem_visible_hands: (isView || ddPlay) ? ['N', 'S', 'E', 'W'] : handAccess.visible,
-    problem_user_hands: (isView || ddPlay) ? undefined : handAccess.controlled,
+    problem_user_hands: isView ? undefined : (ddPlay ? ['N', 'E', 'S', 'W'] : handAccess.controlled),
     contract,
     declarer: boardResult.declarer,
     lead: knownLead,
@@ -214,7 +214,7 @@ function buildAuctionHtml(boardResult, linData) {
       return `<tr>${cells}</tr>`;
     }).join('');
 
-    tableHtml = `<div style="display:inline-block;margin-bottom:5px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;font-family:ui-sans-serif,system-ui;"><table style="border-collapse:collapse;font-size:0.8rem"><thead><tr style="border-bottom:1px solid #d1d5db">${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+    tableHtml = `<div style="display:inline-block;width:max-content;max-width:100%;margin-bottom:5px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;font-family:ui-sans-serif,system-ui;"><table style="border-collapse:collapse;font-size:0.8rem"><thead><tr style="border-bottom:1px solid #d1d5db">${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
   }
 
   return tableHtml || '<div class="pt-auction-placeholder" aria-hidden="true"></div>';
