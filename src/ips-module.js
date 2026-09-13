@@ -714,10 +714,7 @@ function ptAdvanceBtn() {
   const showStep = !_pt.viewTrick && ptStepping() && !_pt.locked;
   const hasPrev = _pt.trickCheckpoints.length > 1;
   if ((showStep && atBoundary) || _pt.awaitingAdvance || _pt.pendingComplete) {
-    return `<span class="pt-view-nav">
-      ${hasPrev ? `<button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button>` : ''}
-      <button class="pt-stepbtn" id="ptStepBtn" title="${_pt.pendingComplete ? 'Switch to view mode' : 'Continue'}">▶</button>
-    </span>`;
+    return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptStepBtn" title="${_pt.pendingComplete ? 'Switch to view mode' : 'Continue'}">▶</button></span>`;
   }
   if (showStep && hasPrev) {
     return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
