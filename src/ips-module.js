@@ -724,7 +724,11 @@ function ptAdvanceBtn() {
   }
   const canUndoAnyTrick = !ptStepping() && _pt.trickCheckpoints.length > 0 && !_pt.locked;
   if (atBoundary && canUndoAnyTrick) {
-    return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
+    // At completion keep ◀ in center for trick browsing; mid-play ◀ is in the corner (ptPlayCornerHtml)
+    if (_pt.P.isComplete(_pt.state)) {
+      return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
+    }
+    return '';
   }
   return '';
 }
@@ -945,11 +949,12 @@ function ptClaimPanelHtml() {
     <button class="pt-claim-cancel" id="ptClaimCancel">Cancel</button></div>${err}</div>`;
 }
 
-function ptPlayCornerHtml(canUndo) {
+function ptPlayCornerHtml(canUndo, canUndoTrick) {
   return `<div class="pt-play-corner">
     ${_ptHideAlertButton ? '' : `<button class="pt-alert${_ptAlertOn ? ' pt-alert-on' : ''}" id="ptAlertBtn"
       title="${_ptAlertOn ? 'Alerts on — click to silence' : 'Alerts off — click to enable'}">Alert: ${_ptAlertOn ? 'on' : 'off'}</button>`}
     <div class="pt-play-corner-row">
+      ${canUndoTrick ? `<button class="pt-histbtn" id="ptPrevTrickInline" title="Undo previous trick">◀ Trick</button>` : ''}
       <button class="pt-histbtn pt-undobtn" id="ptUndoBtn" ${canUndo ? '' : 'disabled'} title="Undo your last card">⎌ Undo</button>
     </div>
   </div>`;
@@ -982,6 +987,7 @@ function ptRender() {
   if (_ptNavEl) _ptNavEl.innerHTML = '';
 
   const complete = _pt.P.isComplete(st);
+  const canUndoAnyTrick = !complete && !ptStepping() && _pt.trickCheckpoints.length > 0 && !_pt.locked && !_pt.awaitingAdvance;
   const statusTxt = complete ? '' : ptStatusText();
   const showTopbar = !!statusTxt;
   const ddScores = ptDdCardScores();
@@ -998,7 +1004,7 @@ function ptRender() {
       </div>
       <div class="pt-pos-n">${ptSeatLabelHtml('N')}${ptRenderHand('N', ddScores)}</div>
       <div class="pt-pos-tr">${_pt.mode === 'play'
-        ? (complete ? '' : ptPlayCornerHtml(canUndo))
+        ? (complete ? '<button class="pt-replay" id="ptRetryBtn" title="Play the deal again">↻ Replay</button>' : ptPlayCornerHtml(canUndo, canUndoAnyTrick))
         : ptAdvanceBtn()}</div>
       <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter()}</div>
@@ -1021,6 +1027,7 @@ function ptRender() {
   });
   root.querySelector('#ptStepBtn')?.addEventListener('click', ptProceed);
   root.querySelector('#ptPrevTrickInline')?.addEventListener('click', ptUndoTrick);
+  root.querySelector('#ptRetryBtn')?.addEventListener('click', ptRetryClick);
   root.querySelector('#ptDdToggle')?.addEventListener('click', ptToggleDd);
   root.querySelector('#ptDdTableClose')?.addEventListener('click', ptCloseDdTable);
   root.querySelector('#ptAlertBtn')?.addEventListener('click', ptToggleAlert);
