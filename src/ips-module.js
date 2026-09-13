@@ -712,12 +712,8 @@ function ptAdvanceBtn() {
   const st = _pt.state;
   const atBoundary = st.trick.length === 0 && st.tricks.length > 0;
   const showStep = !_pt.viewTrick && ptStepping() && !_pt.locked;
-  const hasPrev = _pt.trickCheckpoints.length > 1;
   if ((showStep && atBoundary) || _pt.awaitingAdvance || _pt.pendingComplete) {
     return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptStepBtn" title="${_pt.pendingComplete ? 'Switch to view mode' : 'Continue'}">▶</button></span>`;
-  }
-  if (showStep && hasPrev) {
-    return `<span class="pt-view-nav"><button class="pt-stepbtn" id="ptPrevTrickInline" title="Previous trick">◀</button></span>`;
   }
   return '';
 }
@@ -938,13 +934,14 @@ function ptClaimPanelHtml() {
     <button class="pt-claim-cancel" id="ptClaimCancel">Cancel</button></div>${err}</div>`;
 }
 
-function ptPlayCornerHtml(canUndo, canUndoTrick) {
+function ptPlayCornerHtml(canUndo, showPrevTrick, showNextTrick) {
   return `<div class="pt-play-corner">
     ${_ptHideAlertButton ? '' : `<button class="pt-alert${_ptAlertOn ? ' pt-alert-on' : ''}" id="ptAlertBtn"
       title="${_ptAlertOn ? 'Alerts on — click to silence' : 'Alerts off — click to enable'}">Alert: ${_ptAlertOn ? 'on' : 'off'}</button>`}
     <div class="pt-play-corner-row">
-      ${canUndoTrick ? `<button class="pt-histbtn" id="ptPrevTrickInline" title="Undo previous trick">◀ Trick</button>` : ''}
-      <button class="pt-histbtn pt-undobtn" id="ptUndoBtn" ${canUndo ? '' : 'disabled'} title="Undo your last card">⎌ Undo</button>
+      ${showPrevTrick ? `<button class="pt-histbtn" id="ptPrevTrick" title="View previous trick">◀ Trick</button>` : ''}
+      ${showNextTrick ? `<button class="pt-histbtn" id="ptNextTrick" title="Back to current play">▶</button>` : ''}
+      <button class="pt-histbtn pt-undobtn" id="ptUndoBtn" ${canUndo && !showNextTrick ? '' : 'disabled'} title="Undo your last card">⎌ Undo</button>
     </div>
   </div>`;
 }
@@ -976,7 +973,10 @@ function ptRender() {
   if (_ptNavEl) _ptNavEl.innerHTML = '';
 
   const complete = _pt.P.isComplete(st);
-  const canUndoAnyTrick = !ptStepping() && _pt.trickCheckpoints.length > 1 && !_pt.locked;
+  const isViewingTrick = _pt.viewTrick !== null;
+  const pastTrick1 = st.tricks.length > 1 || (st.tricks.length === 1 && st.trick.length > 0);
+  const showPrevTrick = pastTrick1 && (!isViewingTrick || _pt.viewTrick > 0);
+  const showNextTrick = isViewingTrick;
   const statusTxt = complete ? '' : ptStatusText();
   const showTopbar = !!statusTxt;
   const ddScores = ptDdCardScores();
@@ -993,7 +993,13 @@ function ptRender() {
       </div>
       <div class="pt-pos-n">${ptSeatLabelHtml('N')}${ptRenderHand('N', ddScores)}</div>
       <div class="pt-pos-tr">${_pt.mode === 'play'
-        ? (complete ? `${canUndoAnyTrick ? '<button class="pt-histbtn" id="ptPrevTrickInline" title="Undo previous trick" style="display:block;margin-bottom:4px">◀ Trick</button>' : ''}<button class="pt-replay" id="ptRetryBtn" title="Play the deal again">↻ Replay</button>` : ptPlayCornerHtml(canUndo, canUndoAnyTrick))
+        ? (complete
+          ? `<div class="pt-play-corner"><div class="pt-play-corner-row">
+              ${showPrevTrick ? '<button class="pt-histbtn" id="ptPrevTrick" title="View previous trick">◀ Trick</button>' : ''}
+              ${showNextTrick ? '<button class="pt-histbtn" id="ptNextTrick" title="Back to current play">▶</button>' : ''}
+              <button class="pt-replay" id="ptRetryBtn" title="Play the deal again">↻ Replay</button>
+             </div></div>`
+          : ptPlayCornerHtml(canUndo, showPrevTrick, showNextTrick))
         : ptAdvanceBtn()}</div>
       <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter()}</div>
@@ -1015,7 +1021,6 @@ function ptRender() {
     el.addEventListener('click', () => ptOnCardClick(el.dataset.seat, el.dataset.suit, el.dataset.rank));
   });
   root.querySelector('#ptStepBtn')?.addEventListener('click', ptProceed);
-  root.querySelector('#ptPrevTrickInline')?.addEventListener('click', ptUndoTrick);
   root.querySelector('#ptRetryBtn')?.addEventListener('click', ptRetryClick);
   root.querySelector('#ptDdToggle')?.addEventListener('click', ptToggleDd);
   root.querySelector('#ptDdTableClose')?.addEventListener('click', ptCloseDdTable);
