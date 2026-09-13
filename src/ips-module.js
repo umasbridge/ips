@@ -979,7 +979,7 @@ function ptRender() {
   if (_ptNavEl) _ptNavEl.innerHTML = '';
 
   const complete = _pt.P.isComplete(st);
-  const canUndoAnyTrick = !ptStepping() && _pt.trickCheckpoints.length > 0 && !_pt.locked;
+  const canUndoAnyTrick = !ptStepping() && _pt.trickCheckpoints.length > 0 && st.tricks.length >= 1 && !_pt.locked;
   const statusTxt = complete ? '' : ptStatusText();
   const showTopbar = !!statusTxt;
   const ddScores = ptDdCardScores();
