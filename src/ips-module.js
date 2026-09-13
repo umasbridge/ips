@@ -639,7 +639,7 @@ function ptRenderHand(seat, ddScores = new Map()) {
       const bad = _pt.illegalKey === seat + su + r;
       const ddScore = seat === st.turn ? ddScores.get(su + r) : null;
       const ddText = ddScore == null ? '' : ddScores.contractRelative
-        ? (ddScore === 0 ? '=' : ddScore > 0 ? `+${ddScore}` : `${ddScore}`)
+        ? (ddScore === 0 ? '=' : String(ddScore))
         : String(ddScore);
       const ddTitle = ddScore == null || !ddScores.contractRelative ? ''
         : (ddScore === 0 ? 'Contract makes exactly' : ddScore > 0 ? `${ddScore} overtrick${ddScore === 1 ? '' : 's'}` : `${Math.abs(ddScore)} undertrick${ddScore === -1 ? '' : 's'}`);
