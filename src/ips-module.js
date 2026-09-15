@@ -245,16 +245,10 @@ function ptStart() {
       P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1;
       ptMaybeRevealDummy();
     } else if (_pt.script.length >= 1 && _pt.row.alwaysPrePlayScript) {
-      // Bridge-problems exception: pre-play all scripted cards to the decision point
-      // even when the user is the opening leader. Normal deal-set behaviour is unchanged.
-      while (_pt.scriptIdx < _pt.script.length) {
-        P.applyCard(_pt.state, _pt.script[_pt.scriptIdx++]);
-        ptMaybeRevealDummy();
-        if (_pt.state.trick.length === 0 && _pt.scriptIdx < _pt.script.length) {
-          _pt.trickCheckpoints.push({ state: P.cloneState(_pt.state), scriptIdx: _pt.scriptIdx });
-        }
-      }
-      _pt.scriptHighwater = _pt.scriptIdx;
+      // Bridge-problems exception: auto-play the opening card so the initial position
+      // is visible, then show ▶ step controls for the remaining play-so-far.
+      P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1;
+      ptMaybeRevealDummy();
     } else if (_pt.script.length >= 1) {
       // User is the opening leader — discard the script so ptStepping() stays false
       // and the user can play their card freely. DDS handles all subsequent computer cards.
@@ -976,6 +970,26 @@ function ptRenderPlay() {
   navRoot.querySelector('#ptUndoBtn')?.addEventListener('click', ptUndo);
 }
 
+function ptViewNavHtml() {
+  const st = _pt.state;
+  const vt = _pt.viewTrick;
+  const stepping = ptStepping() && !_pt.locked;
+  const atBoundary = st.trick.length === 0 && st.tricks.length > 0;
+  const isViewingPast = vt !== null;
+  const pastTrick1 = st.tricks.length > 1 || (st.tricks.length === 1 && st.trick.length > 0);
+  const showPrev = pastTrick1 && (!isViewingPast || vt > 0);
+  const showNext = isViewingPast;
+  const showAdvance = !isViewingPast && ((stepping && atBoundary) || _pt.awaitingAdvance || _pt.pendingComplete);
+  if (!showPrev && !showNext && !showAdvance) return '';
+  return `<div class="pt-play-corner">
+    <div class="pt-play-corner-row">
+      ${showPrev ? `<button class="pt-histbtn" id="ptPrevTrick" title="View previous trick">◀ Trick</button>` : ''}
+      ${showNext ? `<button class="pt-histbtn" id="ptNextTrick" title="Back to current">▶</button>` : ''}
+      ${showAdvance ? `<button class="pt-stepbtn" id="ptStepBtn" title="${_pt.pendingComplete ? 'Switch to view mode' : 'Continue'}">▶</button>` : ''}
+    </div>
+  </div>`;
+}
+
 function ptRenderView() {
   const root = _pt.root, st = _pt.state;
   const complete = _pt.P.isComplete(st);
@@ -987,7 +1001,7 @@ function ptRenderView() {
         ${hasAuction ? _ptBiddingHtml : '<div class="pt-auction-placeholder" aria-hidden="true"></div>'}
       </div>
       <div class="pt-pos-n">${ptSeatLabelHtml('N')}${ptRenderHand('N', ddScores)}</div>
-      <div class="pt-pos-tr">${ptAdvanceBtn()}</div>
+      <div class="pt-pos-tr">${ptViewNavHtml()}</div>
       <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter(false)}</div>
       <div class="pt-pos-e">${ptSeatLabelHtml('E')}${ptRenderHand('E', ddScores)}</div>
@@ -1008,6 +1022,8 @@ function ptRenderView() {
     el.addEventListener('click', () => ptOnCardClick(el.dataset.seat, el.dataset.suit, el.dataset.rank));
   });
   root.querySelector('#ptStepBtn')?.addEventListener('click', ptProceed);
+  root.querySelector('#ptPrevTrick')?.addEventListener('click', ptPrevTrick);
+  root.querySelector('#ptNextTrick')?.addEventListener('click', ptNextTrick);
   root.querySelector('#ptDdToggle')?.addEventListener('click', ptToggleDd);
   root.querySelector('#ptDdTableClose')?.addEventListener('click', ptCloseDdTable);
 }
