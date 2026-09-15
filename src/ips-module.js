@@ -244,6 +244,17 @@ function ptStart() {
     if (_pt.script.length >= 1 && (_pt.mode === 'view' || !_pt.userSeats.has(_pt.state.turn))) {
       P.applyCard(_pt.state, _pt.script[0]); _pt.scriptIdx = 1; _pt.scriptHighwater = 1;
       ptMaybeRevealDummy();
+    } else if (_pt.script.length >= 1 && _pt.row.alwaysPrePlayScript) {
+      // Bridge-problems exception: pre-play all scripted cards to the decision point
+      // even when the user is the opening leader. Normal deal-set behaviour is unchanged.
+      while (_pt.scriptIdx < _pt.script.length) {
+        P.applyCard(_pt.state, _pt.script[_pt.scriptIdx++]);
+        ptMaybeRevealDummy();
+        if (_pt.state.trick.length === 0 && _pt.scriptIdx < _pt.script.length) {
+          _pt.trickCheckpoints.push({ state: P.cloneState(_pt.state), scriptIdx: _pt.scriptIdx });
+        }
+      }
+      _pt.scriptHighwater = _pt.scriptIdx;
     } else if (_pt.script.length >= 1) {
       // User is the opening leader — discard the script so ptStepping() stays false
       // and the user can play their card freely. DDS handles all subsequent computer cards.
