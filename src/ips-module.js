@@ -13,7 +13,7 @@
 //
 //   const player = mountIpsPlayer(containerEl, {
 //     row,         // { lin, problem_visible_hands, contract, problem_id, ... }
-//     ddsPath,     // absolute URL to dds-api.js, e.g. '/bridge-problems/dds/dds-api.js'
+//     ddsPath,     // absolute URL to dds-api.js, e.g. '/bridge-lib/ips/dds/dds-api.js'
 //     format,      // 'MP' | 'IMP' | null  — for alert severity
 //     cardingNS,   // 'UDCA' | 'STD'
 //     cardingEW,   // 'UDCA' | 'STD'

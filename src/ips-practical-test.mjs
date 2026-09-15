@@ -1,7 +1,7 @@
-import '../../public/bridge-problems/lin.js';
-import '../../public/bridge-problems/play.js';
+import '../../../bsd-problems/lin.js';
+import '../../../bsd-problems/play.js';
 import './ips.js';
-import { loadDds, Dds } from '../../public/bridge-problems/dds/dds-api.js';
+import { loadDds, Dds } from './dds/dds-api.js';
 
 const P = globalThis.bpPlay;
 const IPS = globalThis.bpIps;

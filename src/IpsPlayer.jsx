@@ -6,7 +6,7 @@ const SCRIPT_ORDER = [
   '/bridge-problems/play.js',
   '/bridge-lib/ips/ips.js',
 ];
-const DDS_PATH = '/bridge-problems/dds/dds-api.js';
+const DDS_PATH = '/bridge-lib/ips/dds/dds-api.js';
 
 const CALL_MAP = { P: 'P', PASS: 'P', D: 'X', X: 'X', DBL: 'X', R: 'XX', XX: 'XX', RDBL: 'XX' };
 
