@@ -926,7 +926,7 @@ function ptRenderPlay() {
   const showPrevTrick = pastTrick1 && (!isViewingTrick || _pt.viewTrick > 0);
   const showNextTrick = isViewingTrick;
   const hasAuction = !_ptBiddingHtml.includes('pt-auction-placeholder');
-  const biddingContent = hasAuction ? _ptBiddingHtml : ptContractOnlyHtml();
+  const biddingContent = hasAuction ? _ptBiddingHtml : '<div class="pt-auction-placeholder" aria-hidden="true"></div>';
   root.innerHTML = `
     ${_pt.warn ? `<div class="pt-warn">${escHtml(_pt.warn)}</div>` : ''}
     <div class="pt-deal${hasAuction ? '' : ' pt-deal-noauction'}" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:478px;box-sizing:border-box;align-self:stretch;">
