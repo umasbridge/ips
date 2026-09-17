@@ -938,14 +938,13 @@ function ptRenderPlay() {
         ? `<div class="pt-play-corner"><div class="pt-play-corner-row">
             ${showPrevTrick ? '<button class="pt-histbtn" id="ptPrevTrick" title="View previous trick">◀ Trick</button>' : ''}
             ${showNextTrick ? '<button class="pt-histbtn" id="ptNextTrick" title="Back to current play">▶</button>' : ''}
-           </div></div>`
+           </div><div class="pt-complete-result">${ptCompletionResultHtml()}</div></div>`
         : ptPlayCornerHtml(canUndo, showPrevTrick, showNextTrick)}</div>
       <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter(true)}</div>
       <div class="pt-pos-e">${ptSeatLabelHtml('E')}${ptRenderHand('E', ddScores)}</div>
       <div class="pt-pos-s">${ptSeatLabelHtml('S')}${ptRenderHand('S', ddScores)}</div>
       <div class="pt-pos-bl">
-        ${complete ? `<div class="pt-complete-result">${ptCompletionResultHtml()}</div>` : ''}
       </div>
       <div class="pt-pos-br">${ptCountsHtml()}${ptDdTableHtml()}</div>
     </div>`;
@@ -1001,13 +1000,12 @@ function ptRenderView() {
         ${hasAuction ? _ptBiddingHtml : '<div class="pt-auction-placeholder" aria-hidden="true"></div>'}
       </div>
       <div class="pt-pos-n">${ptSeatLabelHtml('N')}${ptRenderHand('N', ddScores)}</div>
-      <div class="pt-pos-tr">${ptViewNavHtml()}</div>
+      <div class="pt-pos-tr">${ptViewNavHtml()}${complete ? `<div class="pt-complete-result">${ptCompletionResultHtml()}</div>` : ''}</div>
       <div class="pt-pos-w">${ptSeatLabelHtml('W')}${ptRenderHand('W', ddScores)}</div>
       <div class="pt-pos-c">${ptTrickCenter(false)}</div>
       <div class="pt-pos-e">${ptSeatLabelHtml('E')}${ptRenderHand('E', ddScores)}</div>
       <div class="pt-pos-s">${ptSeatLabelHtml('S')}${ptRenderHand('S', ddScores)}</div>
       <div class="pt-pos-bl">
-        ${complete ? `<div class="pt-complete-result">${ptCompletionResultHtml()}</div>` : ''}
         ${_ptHideDdButton ? '' : `<button class="pt-dd-toggle${_ptDdOn || _pt.ddTableOpen ? ' pt-dd-on' : ''}" id="ptDdToggle" title="${Array.isArray(_pt.row.play) && _pt.row.play.length >= 2 ? 'Show double-dummy future tricks for every legal card' : 'Show double-dummy tricks table'}">DD</button>`}
       </div>
       <div class="pt-pos-br">${ptDdTableHtml()}</div>
