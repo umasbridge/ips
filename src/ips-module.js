@@ -842,7 +842,7 @@ function ptCompletionResultHtml() {
   const comparison = summary.imps != null
     ? ` (IMPs = ${summary.imps > 0 ? '+' : ''}${summary.imps})`
     : summary.mpPercent != null ? ` (MP% = ${summary.mpPercent})` : '';
-  return `<div>Result: ${summary.level}${denomHtml}${escHtml(summary.doubled)} ${escHtml(summary.declarer)} ${summary.resultText}</div>
+  return `<div>${summary.level}${denomHtml}${escHtml(summary.doubled)} ${escHtml(summary.declarer)} ${summary.resultText}</div>
     <div class="pt-complete-score">Score: ${summary.score > 0 ? '+' : ''}${summary.score}${comparison}</div>`;
 }
 
